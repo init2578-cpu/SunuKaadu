@@ -20,6 +20,7 @@ import Candidats from './pages/public/Candidats';
 
 // Admin Pages
 import Login from './pages/admin/Login';
+import UpdatePassword from './pages/admin/UpdatePassword';
 import Dashboard from './pages/admin/Dashboard';
 import Elections from './pages/admin/Elections';
 import PostesCandidats from './pages/admin/PostesCandidats';
@@ -51,6 +52,7 @@ function App() {
 
             {/* Page de Connexion Admin (Hors du Layout Admin sécurisé) */}
             <Route path="/admin/login" element={<Login />} />
+            <Route path="/admin/update-password" element={<UpdatePassword />} />
 
             {/* Espace Admin (Sécurisé par le garde de route) */}
             <Route path="/admin" element={<RequireAdminAuth />}>

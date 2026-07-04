@@ -5,13 +5,13 @@ import { supabase } from '../../lib/supabase';
 import { Shield, ArrowLeft, Mail, Lock, ShieldAlert, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
-  const { loginOrActivate, logout, admin } = useAdminAuth();
+  const { loginOrActivate, logout, admin, resetPassword } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [personalPassword, setPersonalPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [tempPasswordInput, setTempPasswordInput] = useState('');
-  const [step, setStep] = useState<'login' | 'password_personal'>('login');
+  const [step, setStep] = useState<'login' | 'password_personal' | 'forgot_password'>('login');
   const [showPwd, setShowPwd] = useState(false);
 
   const [error, setError] = useState('');
@@ -108,7 +108,28 @@ export default function Login() {
 
   const handleBackToLogin = () => {
     setPassword(''); setPersonalPassword(''); setConfirmPassword(''); setTempPasswordInput('');
-    setStep('login'); setError('');
+    setStep('login'); setError(''); setSuccess('');
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(''); setSuccess('');
+    if (!email.trim() || !email.includes('@')) return setError("Veuillez saisir une adresse email valide.");
+    
+    setLoading(true);
+    try {
+      const result = await resetPassword(email);
+      if (result.success) {
+        setSuccess("Un lien de réinitialisation a été envoyé à votre adresse e-mail. Veuillez vérifier votre boîte de réception.");
+        setTimeout(() => handleBackToLogin(), 5000);
+      } else {
+        setError(result.error || "Erreur lors de l'envoi de l'e-mail.");
+      }
+    } catch (err: any) {
+      setError("Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -152,7 +173,9 @@ export default function Login() {
             <div>
               <h1 className="text-2xl font-display font-black text-white">Administration</h1>
               <p className="text-xs text-gray-500 mt-1">
-                {step === 'login' ? 'Console de gestion électorale sécurisée' : 'Activation du compte administrateur'}
+                {step === 'login' ? 'Console de gestion électorale sécurisée' : 
+                 step === 'password_personal' ? 'Activation du compte administrateur' : 
+                 'Réinitialisation du mot de passe'}
               </p>
             </div>
 
@@ -161,6 +184,7 @@ export default function Login() {
               <div className="flex items-center gap-1.5">
                 <div className={`w-6 h-1 rounded-full transition-all ${step === 'login' ? 'bg-uni-gold' : 'bg-uni-gold/30'}`} />
                 <div className={`w-6 h-1 rounded-full transition-all ${step === 'password_personal' ? 'bg-uni-gold' : 'bg-white/10'}`} />
+                <div className={`w-6 h-1 rounded-full transition-all ${step === 'forgot_password' ? 'bg-uni-gold' : 'bg-white/10'}`} />
               </div>
             </div>
           </div>
@@ -211,6 +235,15 @@ export default function Login() {
                   />
                   <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3.5 top-3 text-gray-600 hover:text-gray-400 transition-colors cursor-pointer">
                     {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <div className="flex justify-end pt-1">
+                  <button 
+                    type="button" 
+                    onClick={() => { setError(''); setSuccess(''); setStep('forgot_password'); }}
+                    className="text-[10px] font-semibold text-gray-400 hover:text-uni-gold transition-colors cursor-pointer"
+                  >
+                    Mot de passe oublié ?
                   </button>
                 </div>
               </div>
@@ -288,6 +321,54 @@ export default function Login() {
                     <div className="w-4 h-4 rounded-full border-2 border-uni-green-dark border-t-transparent animate-spin" />
                   ) : (
                     <span>Activer mon compte 🚀</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Step 3: Forgot Password */}
+          {step === 'forgot_password' && (
+            <form className="space-y-5" onSubmit={handleForgotPassword}>
+              <div className="p-3.5 rounded-xl bg-uni-gold/10 border border-uni-gold/20 text-[11px] text-uni-gold leading-relaxed flex gap-2 items-start">
+                <Mail className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Saisissez l'adresse e-mail associée à votre compte administrateur. Un lien de réinitialisation vous sera envoyé.
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 block">Adresse Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-600" />
+                  <input
+                    type="email"
+                    placeholder="prenom.nom@univ.sn"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
+                    className="input-field w-full pl-10 pr-4 py-3 text-sm placeholder-gray-600 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleBackToLogin}
+                  className="btn-ghost w-1/3 py-3.5 text-xs flex items-center justify-center cursor-pointer"
+                >
+                  Retour
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-gold w-2/3 py-3.5 text-sm flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-uni-green-dark border-t-transparent animate-spin" />
+                  ) : (
+                    <span>Envoyer le lien</span>
                   )}
                 </button>
               </div>

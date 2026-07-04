@@ -23,6 +23,7 @@ interface AdminAuthContextType {
   loginOrActivate: (email: string, password: string, isRepresentantPortal?: boolean, personalPassword?: string) => Promise<{ success: boolean; status?: 'activated' | 'logged_in'; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (data: { nom?: string; prenom?: string; password?: string; email?: string }) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | null>(null);
@@ -289,6 +290,19 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/admin/update-password`,
+      });
+      if (error) throw error;
+      return { success: true };
+    } catch (err: any) {
+      console.error('Erreur lors de la réinitialisation du mot de passe:', err);
+      return { success: false, error: err.message || "Erreur lors de l'envoi de l'e-mail." };
+    }
+  };
+
   const logout = async () => {
     setLoading(true);
     clearRepSession();
@@ -352,7 +366,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <AdminAuthContext.Provider value={{ admin, loading, loginOrActivate, logout, updateProfile }}>
+    <AdminAuthContext.Provider value={{ admin, loading, loginOrActivate, logout, updateProfile, resetPassword }}>
       {children}
     </AdminAuthContext.Provider>
   );
