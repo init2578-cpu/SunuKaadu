@@ -1,0 +1,22 @@
+Pour le projet Sunukaadu (qui utilise un client Supabase simulé en local), voici les identifiants par défaut que vous pouvez utiliser pour vous connecter.
+
+Dans l'environnement de développement simulé, n'importe quel mot de passe (par exemple password ou 123456) fonctionnera avec ces adresses e-mail, car le système de test vérifie uniquement l'e-mail :
+
+1. Administrateurs (Super Admin)
+
+Email : admin@amicale.sn
+Email : ibnrassul05@gmail.com
+2. Représentant (Actif)
+
+Email : representant@univ.sn
+(Il y a aussi un compte Délégué delegue@univ.sn avec le mot de passe Del-Demo99, mais il est marqué comme non activé par défaut dans les données de test).
+
+Si vous êtes connecté à une vraie base de données de production ou de test (non simulée), les identifiants d'origine créés par le script d'initialisation étaient :
+
+Email : admin@saner.sn
+Mot de passe : AdminTemp2026
+
+
+
+Email : master_admin_1782921504138@amicale.sn
+Mot de passe : password
