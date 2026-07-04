@@ -220,22 +220,22 @@ export default function Amicales() {
 
       if (insAdminErr) throw insAdminErr;
 
-      // Invitation email simulation
-      const simulatedEmailContent = `
-        -------------------------------------------------------------
-        📧 [EMAIL SIMULÉ - INVITATION DELEGUE MULTI-TENANT]
-        Destinataire : ${deleguePrenom.trim()} ${delegueNom.trim()} <${emailLower}>
-        Amicale : ${amicaleNom.trim()}
-        Objet : Vos accès Délégué sur la plateforme
-        
-        Bonjour ${deleguePrenom.trim()},
-        Votre espace Amicale "${amicaleNom.trim()}" a été configuré.
-        Activez votre compte et configurez votre mot de passe ici :
-        👉 http://localhost:5173/admin/login
-        Mot de passe suggéré : ${deleguePassword}
-        -------------------------------------------------------------
-      `;
-      console.log(simulatedEmailContent);
+      // Envoi de l'email réel via la fonction Edge
+      try {
+        const { error: emailErr } = await supabase.functions.invoke('send-rep-email', {
+          body: {
+            to: emailLower,
+            prenom: deleguePrenom.trim(),
+            nom: delegueNom.trim(),
+            role: 'delegue',
+            mot_de_passe: deleguePassword,
+            login_url: `${window.location.origin}/admin/login`
+          }
+        });
+        if (emailErr) console.error("Erreur lors de l'envoi de l'email au délégué:", emailErr);
+      } catch (emailException) {
+        console.error("Exception lors de l'envoi de l'email:", emailException);
+      }
 
       setCreatedCredentials({
         email: emailLower,
