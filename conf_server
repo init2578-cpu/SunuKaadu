@@ -1,0 +1,22 @@
+DATA_BASE_NAME = "SunuKaadu@creedit_db"
+DATA_BASE_USER = "SunuKaadu@creedit_user"
+DATA_BASE_PASSWORD = "@SunuKaadu@Creinit/CRE2026"
+DATA_BASE_HOST = "SunuKaadu@creinit.com"
+DATA_BASE_PORT = "3306"
+
+# Legacy symmetric HS256 key
+JWT_SECRET=SunuKaaduSuperSecretKey2026!@#$
+
+POSTGRES_PASSWORD=SunuKaaduDBPass2026
+
+
+=================> SSH SERVER LOG <=================
+ssh crekolda@ssh.creinit.com
+SERVER_USER_NAME = crekolda
+SERVER_MASSWORD = @CreKolda/2026
+
+
+=================> PLATEFORM_LOG <=================
+LOGIN : youssouphbadji2013@gmail.com
+PASSWORD : CodeFire@7292/CREiNiT
+
