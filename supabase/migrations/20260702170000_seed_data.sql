@@ -24,14 +24,13 @@ VALUES (
 ) ON CONFLICT DO NOTHING;
 
 -- 3. Candidat
-INSERT INTO public.candidats (id, poste_id, nom, prenom, parti, email)
+INSERT INTO public.candidats (id, poste_id, nom, prenom, slogan)
 VALUES (
   'c1111111-1111-1111-1111-111111111111',
   '11111111-1111-1111-1111-111111111111',
   'Diop',
   'Awa',
-  'L''avenir ensemble',
-  'candidat@amicale.sn'
+  'L''avenir ensemble'
 ) ON CONFLICT DO NOTHING;
 
 -- 4. Étudiant de test (électeur)
