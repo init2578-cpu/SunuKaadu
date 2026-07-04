@@ -10,64 +10,46 @@ const FROM_EMAIL = "onboarding@resend.dev";
 const APP_URL = Deno.env.get("APP_URL") || "http://localhost:5173";
 
 async function verifyAuthorization(authHeader: string | null): Promise<boolean> {
-  console.log("[verifyAuthorization] Start");
-  if (!authHeader) {
-    console.log("[verifyAuthorization] No authHeader provided");
-    return false;
-  }
+  if (!authHeader) return false;
   const token = authHeader.replace("Bearer ", "");
   
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   if (serviceRoleKey && token === serviceRoleKey) {
-    console.log("[verifyAuthorization] Authenticated via Service Role Key");
     return true;
   }
 
-  // Fallback to public URL if kong internal URL fails or is preferred
-  const supabaseUrl = Deno.env.get("SUPABASE_PUBLIC_URL") || Deno.env.get("SUPABASE_URL") || "";
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.log("[verifyAuthorization] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
-    return false;
-  }
-
-  console.log(`[verifyAuthorization] Using URL: ${supabaseUrl}`);
-
   try {
-    const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
-    });
+    // 1. Parser le JWT localement pour extraire l'ID utilisateur
+    const payloadB64 = token.split(".")[1];
+    const payloadStr = atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/"));
+    const jwt = JSON.parse(payloadStr);
+    const userId = jwt.sub;
     
-    const { data: { user }, error } = await tempClient.auth.getUser();
-    if (error || !user) {
-      console.log("[verifyAuthorization] getUser() error:", error);
-      return false;
-    }
+    if (!userId) return false;
+
+    // 2. Toujours utiliser http://kong:8000 en interne (le DNS Docker)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "http://kong:8000";
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
 
-    const { data: adminData, error: adminErr } = await supabaseAdmin
+    const { data: adminData, error } = await supabaseAdmin
       .from("admins")
       .select("role, is_revoked")
-      .eq("auth_user_id", user.id)
+      .eq("auth_user_id", userId)
       .maybeSingle();
 
-    if (adminErr) {
-      console.log("[verifyAuthorization] fetch admins error:", adminErr);
+    if (error) {
+      console.error("Erreur DB:", error);
       return false;
     }
 
     if (adminData && !adminData.is_revoked && (adminData.role === "super_admin" || adminData.role === "delegue")) {
-      console.log(`[verifyAuthorization] Success! User role: ${adminData.role}`);
       return true;
-    } else {
-      console.log("[verifyAuthorization] Unauthorized role or revoked:", adminData);
     }
   } catch (err) {
-    console.error("[verifyAuthorization] Token verification exception:", err);
+    console.error("Erreur vérification token:", err);
   }
 
   return false;
