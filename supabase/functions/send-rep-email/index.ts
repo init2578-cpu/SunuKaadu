@@ -10,17 +10,28 @@ const FROM_EMAIL = "onboarding@resend.dev";
 const APP_URL = Deno.env.get("APP_URL") || "http://localhost:5173";
 
 async function verifyAuthorization(authHeader: string | null): Promise<boolean> {
-  if (!authHeader) return false;
+  console.log("[verifyAuthorization] Start");
+  if (!authHeader) {
+    console.log("[verifyAuthorization] No authHeader provided");
+    return false;
+  }
   const token = authHeader.replace("Bearer ", "");
   
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   if (serviceRoleKey && token === serviceRoleKey) {
+    console.log("[verifyAuthorization] Authenticated via Service Role Key");
     return true;
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  // Fallback to public URL if kong internal URL fails or is preferred
+  const supabaseUrl = Deno.env.get("SUPABASE_PUBLIC_URL") || Deno.env.get("SUPABASE_URL") || "";
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-  if (!supabaseUrl || !supabaseAnonKey) return false;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.log("[verifyAuthorization] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
+    return false;
+  }
+
+  console.log(`[verifyAuthorization] Using URL: ${supabaseUrl}`);
 
   try {
     const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -29,23 +40,34 @@ async function verifyAuthorization(authHeader: string | null): Promise<boolean> 
     });
     
     const { data: { user }, error } = await tempClient.auth.getUser();
-    if (error || !user) return false;
+    if (error || !user) {
+      console.log("[verifyAuthorization] getUser() error:", error);
+      return false;
+    }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
 
-    const { data: adminData } = await supabaseAdmin
+    const { data: adminData, error: adminErr } = await supabaseAdmin
       .from("admins")
       .select("role, is_revoked")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
+    if (adminErr) {
+      console.log("[verifyAuthorization] fetch admins error:", adminErr);
+      return false;
+    }
+
     if (adminData && !adminData.is_revoked && (adminData.role === "super_admin" || adminData.role === "delegue")) {
+      console.log(`[verifyAuthorization] Success! User role: ${adminData.role}`);
       return true;
+    } else {
+      console.log("[verifyAuthorization] Unauthorized role or revoked:", adminData);
     }
   } catch (err) {
-    console.error("Token verification error:", err);
+    console.error("[verifyAuthorization] Token verification exception:", err);
   }
 
   return false;
