@@ -102,7 +102,7 @@ export default function Etudiants() {
       const { data: studentsDocs, error: studErr } = await queryBuilder;
       if (studErr) throw studErr;
 
-      const data = (studentsDocs || []) as Student[];
+      const data = (studentsDocs || []) as unknown as Student[];
 
       // Récupérer la map des amicales pour le tri
       const amicaleMap = new Map<string, string>();

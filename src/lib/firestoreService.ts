@@ -211,7 +211,7 @@ export const getStudents = async (amicaleId: string): Promise<Student[]> => {
     .select('id, nom, prenom, email, matricule, numero_carte, filiere, promotion, amicale_id, is_activated, created_at')
     .eq('amicale_id', amicaleId);
   if (error) throw error;
-  return (data || []) as Student[];
+  return (data || []) as unknown as Student[];
 };
 
 // =========================================================================
