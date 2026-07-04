@@ -8,7 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "http://kong:8000";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const APP_URL = Deno.env.get("APP_URL") || "http://localhost:5173";
+const APP_URL = Deno.env.get("APP_URL") || "https://sunukaadu.creinit.com";
 
 // Client privilégié (bypass RLS) pour opérations serveur
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {

@@ -7,7 +7,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const FROM_EMAIL = "onboarding@resend.dev";
-const APP_URL = Deno.env.get("APP_URL") || "http://localhost:5173";
+const APP_URL = Deno.env.get("APP_URL") || "https://sunukaadu.creinit.com";
 
 async function verifyAuthorization(authHeader: string | null): Promise<boolean> {
   if (!authHeader) return false;
