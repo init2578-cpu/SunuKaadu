@@ -782,10 +782,6 @@ export default function PostesCandidats() {
       let authUserId: string | null = null;
       let isActivated = student.is_activated;
 
-      if (!authUserId) {
-        authUserId = 'mock-rep-auth-id-' + Math.random().toString(36).substring(2, 15);
-      }
-
       // Insérer le représentant dans admins
       const { error: insertErr } = await supabase
         .from('admins')
