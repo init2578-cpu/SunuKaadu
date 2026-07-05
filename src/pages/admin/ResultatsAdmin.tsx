@@ -698,6 +698,11 @@ export default function ResultatsAdmin() {
               </div>
             </div>
           </div>
+
+          {/* Pied de page (Copyright) */}
+          <div className="mt-16 pt-6 border-t border-white/5 print:border-black/10 text-center text-xs text-gray-500 print:text-black font-semibold font-mono print:break-inside-avoid">
+            Copyright : CRE - Centre de Recherche et d'Essais de Kolda
+          </div>
         </>
       )}
     </div>
