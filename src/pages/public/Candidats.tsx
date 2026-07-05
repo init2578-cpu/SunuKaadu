@@ -17,6 +17,12 @@ interface Candidat {
   photo_url: string | null;
   slogan: string | null;
   programme: string | null;
+  representant?: {
+    id: string;
+    prenom: string;
+    nom: string;
+    email: string;
+  } | null;
 }
 
 interface Poste {
@@ -102,10 +108,30 @@ export default function Candidats() {
 
         if (candidatsErr) throw candidatsErr;
 
+        // Charger les représentants associés
+        const candIds = (candidatsData || []).map(c => c.id);
+        let repsData: any[] = [];
+        if (candIds.length > 0) {
+          const { data: reps, error: repsErr } = await supabase
+            .from('admins')
+            .select('id, nom, prenom, email, candidat_id')
+            .eq('role', 'representant')
+            .eq('is_revoked', false)
+            .in('candidat_id', candIds);
+          if (!repsErr && reps) {
+            repsData = reps;
+          }
+        }
+
         // Associer les candidats à leurs postes
         const mappedPostes = postesData.map(poste => ({
           ...poste,
-          candidats: (candidatsData || []).filter(c => c.poste_id === poste.id)
+          candidats: (candidatsData || [])
+            .filter(c => c.poste_id === poste.id)
+            .map(c => ({
+              ...c,
+              representant: repsData.find(r => r.candidat_id === c.id) || null
+            }))
         }));
         setPostes(mappedPostes as any);
       } else {
@@ -244,6 +270,11 @@ export default function Candidats() {
                                     // {cand.slogan}
                                   </p>
                                 )}
+                                {cand.representant && (
+                                  <p className="text-[10px] text-neon-cyan/85 font-mono mt-1 border border-neon-cyan/25 bg-neon-cyan/5 px-1.5 py-0.5 rounded truncate max-w-full inline-block">
+                                    Rep : {cand.representant.prenom} {cand.representant.nom}
+                                  </p>
+                                )}
                               </div>
                             </div>
 
@@ -305,6 +336,15 @@ export default function Candidats() {
                 )}
               </div>
             </div>
+
+            {/* Représentant info */}
+            {selectedCandidat.representant && (
+              <div className="p-4 bg-neon-cyan/5 border border-neon-cyan/20 rounded-lg space-y-1">
+                <h4 className="text-[10px] font-mono font-bold uppercase tracking-wider text-neon-cyan/80">Représentant officiel du candidat</h4>
+                <p className="text-sm font-semibold text-white font-mono">{selectedCandidat.representant.prenom} {selectedCandidat.representant.nom}</p>
+                <p className="text-xs text-neon-cyan/60 font-mono">{selectedCandidat.representant.email}</p>
+              </div>
+            )}
 
             {/* Programme body */}
             <div className="space-y-3.5 pt-4 border-t border-neon-cyan/20">
