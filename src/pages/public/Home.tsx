@@ -30,6 +30,14 @@ export default function Home() {
   const [openElection, setOpenElection] = useState<Election | null>(null);
   const [publishedElection, setPublishedElection] = useState<Election | null>(null);
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isExpired: boolean;
+    type: 'ouverture' | 'fermeture';
+  } | null>(null);
 
   const fetchElectionState = async () => {
     const selectedAmId = localStorage.getItem('selected_amicale_id');
@@ -41,18 +49,27 @@ export default function Home() {
     try {
       setLoading(true);
       
-      // 1. Rechercher une élection ouverte
-      const { data: openDocs, error: openErr } = await supabase
+      // 1. Rechercher une élection ouverte ou planifiée (statuts ouverte ou brouillon)
+      const { data: candidates, error: err } = await supabase
         .from('elections')
         .select('*')
-        .eq('statut', 'ouverte')
         .eq('amicale_id', selectedAmId)
-        .order('created_at', { ascending: false });
+        .in('statut', ['ouverte', 'brouillon'])
+        .order('date_ouverture', { ascending: true });
 
-      if (openErr) throw openErr;
+      if (err) throw err;
 
-      if (openDocs && openDocs.length > 0) {
-        setOpenElection(openDocs[0] as Election);
+      const now = new Date();
+      const validElections = (candidates || []).filter(el => {
+        if (el.statut === 'ouverte') return true;
+        if (el.statut === 'brouillon' && el.date_ouverture) {
+          return new Date(el.date_ouverture) > now;
+        }
+        return false;
+      });
+
+      if (validElections.length > 0) {
+        setOpenElection(validElections[0] as Election);
         setPublishedElection(null);
       } else {
         setOpenElection(null);
@@ -79,6 +96,47 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!openElection) {
+      setCountdown(null);
+      return;
+    }
+
+    const targetStr = openElection.statut === 'brouillon' 
+      ? openElection.date_ouverture 
+      : openElection.date_fermeture;
+
+    if (!targetStr) {
+      setCountdown(null);
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const targetDate = new Date(targetStr);
+      const difference = targetDate.getTime() - new Date().getTime();
+
+      if (difference <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true, type: openElection.statut === 'brouillon' ? 'ouverture' : 'fermeture' });
+        fetchElectionState();
+        return;
+      }
+
+      setCountdown({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+        isExpired: false,
+        type: openElection.statut === 'brouillon' ? 'ouverture' : 'fermeture',
+      });
+    };
+
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(interval);
+  }, [openElection]);
 
   useEffect(() => {
     fetchElectionState();
@@ -172,6 +230,51 @@ export default function Home() {
                     &gt; {openElection.description || "Aucune description fournie pour ce scrutin. Veuillez vous rapprocher de la commission électorale."}
                   </p>
                 </div>
+
+                {countdown && !countdown.isExpired && (
+                  (() => {
+                    const isOpening = countdown.type === 'ouverture';
+                    const themeColorClass = isOpening ? 'text-neon-pink' : 'text-neon-cyan';
+                    const themeBorderClass = isOpening ? 'border-neon-pink/30' : 'border-neon-cyan/30';
+                    const themeBgGlowClass = isOpening ? 'rgba(255,0,127,0.05)' : 'rgba(0,240,255,0.05)';
+                    const themeTextColorClass = isOpening ? 'text-neon-pink/60' : 'text-neon-cyan/60';
+                    
+                    return (
+                      <div className={`mt-6 p-6 border ${isOpening ? 'border-neon-pink/20' : 'border-neon-cyan/20'} bg-black/40 relative overflow-hidden backdrop-blur-sm`}>
+                        <div className={`absolute inset-0 bg-gradient-to-b from-transparent via-${isOpening ? 'neon-pink' : 'neon-cyan'}/5 to-transparent animate-scan`} style={{ animationDuration: '4s' }} />
+                        
+                        <div className="relative z-10 space-y-4">
+                          <div className={`text-xs font-mono font-bold tracking-widest uppercase ${isOpening ? 'text-neon-pink/80' : 'text-neon-cyan/80'} flex items-center gap-2`}>
+                            <Clock className={`w-4 h-4 animate-pulse ${themeColorClass}`} />
+                            <span>TEMPS RESTANT AVANT {isOpening ? 'L\'OUVERTURE' : 'LA CLÔTURE'} :</span>
+                          </div>
+                          
+                          <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-lg">
+                            {[
+                              { label: 'JOURS', value: countdown.days },
+                              { label: 'HEURES', value: countdown.hours },
+                              { label: 'MINUTES', value: countdown.minutes },
+                              { label: 'SECONDES', value: countdown.seconds }
+                            ].map((unit, idx) => (
+                              <div 
+                                key={idx} 
+                                className={`flex flex-col items-center justify-center p-3 bg-black/60 border ${themeBorderClass} rounded-none`}
+                                style={{ boxShadow: `0 0 10px ${themeBgGlowClass}` }}
+                              >
+                                <span className="text-xl sm:text-3xl font-display font-black text-white tracking-widest">
+                                  {String(unit.value).padStart(2, '0')}
+                                </span>
+                                <span className={`text-[8px] sm:text-[10px] font-mono font-bold ${themeTextColorClass} tracking-wider mt-1`}>
+                                  {unit.label}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
 
                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 mt-8 pt-6 border-t border-neon-cyan/20">
                   {!hasNotStartedYet ? (
