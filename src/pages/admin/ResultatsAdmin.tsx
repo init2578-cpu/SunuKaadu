@@ -699,8 +699,22 @@ export default function ResultatsAdmin() {
             </div>
           </div>
 
-          {/* Pied de page (Copyright) */}
-          <div className="mt-16 pt-6 border-t border-white/5 print:border-black/10 text-center text-xs text-gray-500 print:text-black font-semibold font-mono print:break-inside-avoid">
+          {/* Style d'impression pour éviter l'overlap avec le footer fixe */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              body {
+                margin-bottom: 50px !important;
+              }
+            }
+          `}} />
+
+          {/* Pied de page imprimé répété en bas de chaque page PDF */}
+          <div className="hidden print:block fixed bottom-0 left-0 right-0 text-center text-[10px] text-black font-bold font-mono bg-white py-2 border-t border-black">
+            Copyright : CRE - Centre de Recherche et d'Essais de Kolda
+          </div>
+
+          {/* Pied de page écran (affiché en bas du contenu sur écran seulement) */}
+          <div className="no-print mt-16 pt-6 border-t border-white/5 text-center text-xs text-gray-500 font-semibold font-mono">
             Copyright : CRE - Centre de Recherche et d'Essais de Kolda
           </div>
         </>
