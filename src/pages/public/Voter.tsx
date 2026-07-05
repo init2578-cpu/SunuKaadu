@@ -64,6 +64,12 @@ export default function Voter() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [simulating, setSimulating] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
 
   // Charger les données du scrutin
   const loadVotingState = async () => {
@@ -142,6 +148,36 @@ export default function Voter() {
   useEffect(() => {
     loadVotingState();
   }, [student]);
+
+  useEffect(() => {
+    if (!election || election.statut !== 'ouverte' || !election.date_fermeture) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const targetDate = new Date(election.date_fermeture!);
+      const difference = targetDate.getTime() - new Date().getTime();
+
+      if (difference <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        loadVotingState();
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      });
+    };
+
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(interval);
+  }, [election]);
 
   // Récupérer les postes non votés
   const remainingPositions = positions.filter(pos => !votedPosteIds.includes(pos.id));
@@ -443,6 +479,29 @@ export default function Voter() {
   return (
     <div className="w-full max-w-4xl mx-auto py-4 px-4 space-y-6">
       
+      {/* Chronomètre du temps restant */}
+      {timeLeft && (
+        <div className="glassmorphism p-4 rounded-2xl border border-neon-cyan/20 bg-neon-cyan/5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_15px_rgba(0,240,255,0.05)]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-neon-cyan/10 flex items-center justify-center border border-neon-cyan/30 text-neon-cyan shrink-0">
+              <Clock className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
+            </div>
+            <div className="text-center sm:text-left">
+              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-neon-cyan/80">Temps de vote restant</h4>
+              <p className="text-[11px] text-gray-400">Scrutin ouvert : veuillez exprimer vos choix avant la clôture automatique.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 font-mono font-black text-lg text-white bg-black/40 border border-white/10 px-4 py-2 rounded-xl shrink-0">
+            {timeLeft.days > 0 && <span className="text-neon-cyan">{timeLeft.days}j </span>}
+            <span>{String(timeLeft.hours).padStart(2, '0')}</span>
+            <span className="text-gray-500 animate-pulse">:</span>
+            <span>{String(timeLeft.minutes).padStart(2, '0')}</span>
+            <span className="text-gray-500 animate-pulse">:</span>
+            <span className="text-uni-rose">{String(timeLeft.seconds).padStart(2, '0')}</span>
+          </div>
+        </div>
+      )}
+
       {/* Barre de progression supérieure */}
       <div className="glassmorphism p-5 rounded-2xl border border-white/5 space-y-3 shadow-md">
         <div className="flex justify-between items-center text-xs font-semibold">
