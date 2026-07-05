@@ -516,69 +516,114 @@ export default function ResultatsAdmin() {
                 </div>
 
                 <div className="p-5">
-                  {(viewModes[pos.id] || 'list') === 'list' ? (
-                    <div className="space-y-4">
-                      {pos.candidates.map(cand => (
-                        <div 
-                          key={cand.id}
-                          className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                            cand.isWinner 
-                              ? 'border-uni-gold/25 bg-uni-gold/5' 
-                              : 'border-white/5 bg-white/1'
-                          }`}
-                        >
-                          <div className="flex gap-3 items-center min-w-[200px]">
-                            {cand.photo_url ? (
-                              <img 
-                                src={cand.photo_url} 
-                                alt={`${cand.prenom} ${cand.nom}`}
-                                className="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 font-bold text-xs text-gray-400 shrink-0">
-                                {cand.prenom[0]}{cand.nom[0]}
+                  {/* --- VUE ÉCRAN (Interactif avec onglets) --- */}
+                  <div className="no-print">
+                    {(viewModes[pos.id] || 'list') === 'list' ? (
+                      <div className="space-y-4">
+                        {pos.candidates.map(cand => (
+                          <div 
+                            key={cand.id}
+                            className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                              cand.isWinner 
+                                ? 'border-uni-gold/25 bg-uni-gold/5' 
+                                : 'border-white/5 bg-white/1'
+                            }`}
+                          >
+                            <div className="flex gap-3 items-center min-w-[200px]">
+                              {cand.photo_url ? (
+                                <img 
+                                  src={cand.photo_url} 
+                                  alt={`${cand.prenom} ${cand.nom}`}
+                                  className="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 font-bold text-xs text-gray-400 shrink-0">
+                                  {cand.prenom[0]}{cand.nom[0]}
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
+                                  {cand.prenom} {cand.nom}
+                                  {cand.isWinner && (
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-uni-gold/20 text-uni-gold border border-uni-gold/30 text-[8px] font-bold">
+                                      <Award className="w-2.5 h-2.5 fill-uni-gold" /> Gagnant
+                                    </span>
+                                  )}
+                                </h4>
+                                {cand.slogan && <p className="text-[10px] text-gray-400 italic">« {cand.slogan} »</p>}
                               </div>
-                            )}
-                            <div>
-                              <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
-                                {cand.prenom} {cand.nom}
-                                {cand.isWinner && (
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-uni-gold/20 text-uni-gold border border-uni-gold/30 text-[8px] font-bold">
-                                    <Award className="w-2.5 h-2.5 fill-uni-gold" /> Gagnant
-                                  </span>
-                                )}
-                              </h4>
-                              {cand.slogan && <p className="text-[10px] text-gray-400 italic">« {cand.slogan} »</p>}
+                            </div>
+
+                            <div className="flex-1 max-w-md space-y-1 sm:px-2">
+                              <div className="h-2 bg-white/5 rounded-full overflow-hidden w-full relative">
+                                <div 
+                                  className={`h-full rounded-full transition-all duration-700 ease-out ${
+                                    cand.isWinner ? 'bg-uni-gold' : 'bg-white/20'
+                                  }`}
+                                  style={{ width: `${cand.percentage}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className={`text-sm font-black ${cand.isWinner ? 'text-uni-gold' : 'text-white'}`}>
+                                {cand.votes_count} voix
+                              </span>
+                              <span className="text-[10px] text-gray-500 font-semibold block">({cand.percentage}%)</span>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <ResultsChart
+                        candidates={pos.candidates}
+                        totalVotes={pos.total_votes}
+                        type={viewModes[pos.id] as 'bar' | 'doughnut'}
+                      />
+                    )}
+                  </div>
 
-                          <div className="flex-1 max-w-md space-y-1 sm:px-2">
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden w-full relative">
-                              <div 
-                                className={`h-full rounded-full transition-all duration-700 ease-out ${
-                                  cand.isWinner ? 'bg-uni-gold' : 'bg-white/20'
-                                }`}
-                                style={{ width: `${cand.percentage}%` }}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <span className={`text-sm font-black ${cand.isWinner ? 'text-uni-gold' : 'text-white'}`}>
-                              {cand.votes_count} voix
-                            </span>
-                            <span className="text-[10px] text-gray-500 font-semibold block">({cand.percentage}%)</span>
-                          </div>
-                        </div>
-                      ))}
+                  {/* --- VUE IMPRESSION PDF (Procès-verbal figé avec Tableau + Diagramme circulaire) --- */}
+                  <div className="hidden print:block space-y-6">
+                    {/* Tableau print */}
+                    <div className="border border-black rounded-none overflow-hidden">
+                      <table className="min-w-full divide-y divide-black text-black">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th scope="col" className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-black border-r border-black">Candidat</th>
+                            <th scope="col" className="px-4 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-black border-r border-black">Suffrages</th>
+                            <th scope="col" className="px-4 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-black">Pourcentage</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-black">
+                          {pos.candidates.map(cand => (
+                            <tr key={cand.id} className={cand.isWinner ? 'bg-yellow-50 font-bold' : ''}>
+                              <td className="px-4 py-2 whitespace-nowrap text-xs text-black border-r border-black">
+                                {cand.prenom} {cand.nom} {cand.isWinner ? '🏆 (Gagnant)' : ''}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-black border-r border-black">
+                                {cand.votes_count} voix
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-black">
+                                {cand.percentage}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  ) : (
-                    <ResultsChart
-                      candidates={pos.candidates}
-                      totalVotes={pos.total_votes}
-                      type={viewModes[pos.id] as 'bar' | 'doughnut'}
-                    />
-                  )}
+
+                    {/* Diagramme circulaire print */}
+                    <div className="flex justify-center items-center py-4 border border-black p-4 bg-white">
+                      <div className="w-full max-w-lg text-black">
+                        <ResultsChart
+                          candidates={pos.candidates}
+                          totalVotes={pos.total_votes}
+                          type="doughnut"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
