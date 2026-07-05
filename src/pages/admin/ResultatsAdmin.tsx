@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import ResultsChart from '../../components/ResultsChart';
 import VoteEvolutionChart from '../../components/VoteEvolutionChart';
+import GlobalTurnoutChart from '../../components/GlobalTurnoutChart';
 
 interface Election {
   id: string;
@@ -68,6 +69,7 @@ export default function ResultatsAdmin() {
   const [errorMsg, setErrorMsg] = useState('');
   const [viewModes, setViewModes] = useState<Record<string, 'list' | 'bar' | 'doughnut'>>({});
   const [votes, setVotes] = useState<any[]>([]);
+  const [emargementTimestamps, setEmargementTimestamps] = useState<number[]>([]);
 
   // Charger toutes les élections existantes pour l'admin
   const loadAllElections = async () => {
@@ -170,9 +172,19 @@ export default function ResultatsAdmin() {
 
       const { data: emargementsDocs, error: emErr } = await supabase
         .from('emargements')
-        .select('student_id')
+        .select('student_id, created_at')
         .eq('election_id', electionId);
       if (emErr) throw emErr;
+
+      const studentFirstVoteTime: Record<string, number> = {};
+      (emargementsDocs || []).forEach(d => {
+        const time = new Date(d.created_at).getTime();
+        if (!studentFirstVoteTime[d.student_id] || time < studentFirstVoteTime[d.student_id]) {
+          studentFirstVoteTime[d.student_id] = time;
+        }
+      });
+      const sortedTimestamps = Object.values(studentFirstVoteTime).sort((a, b) => a - b);
+      setEmargementTimestamps(sortedTimestamps);
 
       const voterIds = new Set((emargementsDocs || []).map(d => d.student_id));
       const votersCount = voterIds.size;
@@ -462,6 +474,23 @@ export default function ResultatsAdmin() {
                 Le vote s'est déroulé de manière transparente avec un protocole de chiffrement garantissant à la fois l'anonymat absolu du suffrage de chaque électeur et la traçabilité de l'émargement. 
                 Les votes ont été enregistrés du <strong className="text-white print:text-black">{formatDate(selectedElection.date_ouverture)}</strong> au <strong className="text-white print:text-black">{formatDate(selectedElection.date_fermeture)}</strong>. Les audits de sécurité n'ont révélé aucune anomalie ou altération de données.
               </p>
+            </div>
+          )}
+
+          {/* Évolution globale de la participation */}
+          {selectedElection && stats && emargementTimestamps.length > 0 && (
+            <div className="glassmorphism p-6 rounded-2xl border border-white/5 space-y-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 print:text-black font-display">
+                <span>📈 Évolution Temporelle Globale de la Participation (Turnout)</span>
+              </h3>
+              <div className="p-4 bg-white/2 rounded-xl border border-white/10 print:bg-white print:border-black print:p-2">
+                <GlobalTurnoutChart
+                  voteTimestamps={emargementTimestamps}
+                  totalEligible={stats.total_students}
+                  dateOuverture={selectedElection.date_ouverture}
+                  dateFermeture={selectedElection.date_fermeture}
+                />
+              </div>
             </div>
           )}
 
