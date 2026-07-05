@@ -444,6 +444,23 @@ export default function ResultatsAdmin() {
             </div>
           )}
 
+          {/* Procès-Verbal / Préambule Officiel */}
+          {selectedElection && stats && (
+            <div className="p-6 rounded-2xl border border-white/10 bg-white/2 space-y-3 text-sm text-gray-300 print:text-black print:bg-white print:border-black print:p-4 font-mono leading-relaxed">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 print:text-black">
+                <FileText className="w-4 h-4 text-uni-gold print:text-black" />
+                <span>Procès-Verbal de Scrutin</span>
+              </h3>
+              <p>
+                Conformément aux dispositions réglementaires régissant les élections de l'amicale des étudiants de l'établissement, le bureau électoral certifie par le présent procès-verbal les résultats issus du scrutin électronique sécurisé. 
+              </p>
+              <p>
+                Le vote s'est déroulé de manière transparente avec un protocole de chiffrement garantissant à la fois l'anonymat absolu du suffrage de chaque électeur et la traçabilité de l'émargement. 
+                Les votes ont été enregistrés du <strong className="text-white print:text-black">{formatDate(selectedElection.date_ouverture)}</strong> au <strong className="text-white print:text-black">{formatDate(selectedElection.date_fermeture)}</strong>. Les audits de sécurité n'ont révélé aucune anomalie ou altération de données.
+              </p>
+            </div>
+          )}
+
           {/* Postes */}
           <div className="space-y-6">
             {positionResults.map(pos => (
