@@ -292,11 +292,43 @@ export default function Elections() {
       const targetAmicaleId = elec.amicale_id || admin?.amicale_id;
       if (!targetAmicaleId) return;
 
-      // Récupérer les étudiants + les candidats
-      const [{ data: studentsSnap }, { data: postesData }] = await Promise.all([
-        supabase.from('students').select('id, nom, prenom, email, matricule, numero_carte, filiere, promotion, amicale_id, is_activated, created_at').eq('amicale_id', targetAmicaleId).eq('is_activated', true),
+      // Récupérer les représentants/délégués, les étudiants et les postes
+      const [{ data: adminsSnap }, { data: initialStudentsSnap }, { data: postesData }] = await Promise.all([
+        supabase.from('admins').select('id, nom, prenom, email, role').eq('amicale_id', targetAmicaleId).in('role', ['delegue', 'representant']).eq('is_revoked', false),
+        supabase.from('students').select('id, nom, prenom, email, matricule, numero_carte, filiere, promotion, amicale_id, is_activated, created_at').eq('amicale_id', targetAmicaleId),
         supabase.from('postes').select('id, nom').eq('election_id', electionId)
       ]);
+
+      const studentsList = [...(initialStudentsSnap || [])];
+      const existingEmails = new Set(studentsList.map(s => s.email.toLowerCase().trim()));
+
+      if (adminsSnap && adminsSnap.length > 0) {
+        for (const adminItem of adminsSnap) {
+          const adminEmail = adminItem.email.toLowerCase().trim();
+          if (!existingEmails.has(adminEmail)) {
+            const { data: newStudent, error: insertErr } = await supabase
+              .from('students')
+              .insert([{
+                nom: adminItem.nom || 'Admin',
+                prenom: adminItem.prenom || 'Amicale',
+                email: adminEmail,
+                numero_carte: `ADM-${adminItem.role.toUpperCase()}-${adminItem.id.substring(0, 8)}`,
+                matricule: `ADM-${adminItem.role.toUpperCase()}-${adminItem.id.substring(0, 8)}`,
+                is_activated: true,
+                amicale_id: targetAmicaleId,
+                created_at: new Date().toISOString()
+              }])
+              .select('id, nom, prenom, email, matricule, numero_carte, filiere, promotion, amicale_id, is_activated, created_at')
+              .single();
+
+            if (!insertErr && newStudent) {
+              studentsList.push(newStudent);
+            } else {
+              console.error(`Erreur d'insertion de l'admin ${adminEmail} dans students:`, insertErr);
+            }
+          }
+        }
+      }
 
       const expiresAt = elec.date_fermeture
         ? new Date(elec.date_fermeture).getTime()
@@ -316,8 +348,8 @@ export default function Elections() {
       let sandboxCount = 0;
 
       // ── E-mails étudiants (OTP) ─────────────────────────────────────────
-      if (studentsSnap && studentsSnap.length > 0) {
-        for (const student of studentsSnap) {
+      if (studentsList && studentsList.length > 0) {
+        for (const student of studentsList) {
           const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
           // Stocker le code OTP dans la base
@@ -376,7 +408,7 @@ export default function Elections() {
         }
       }
 
-      return { emailsSent, sandboxCount, studentsCount: studentsSnap?.length || 0, candidatsCount: candidatesDocs.length };
+      return { emailsSent, sandboxCount, studentsCount: studentsList.length, candidatsCount: candidatesDocs.length };
     } catch (e: any) {
       console.error('sendVoteEmails error:', e);
       return null;

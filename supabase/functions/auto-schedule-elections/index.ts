@@ -90,20 +90,56 @@ async function processElectionEmails(election: Record<string, unknown>): Promise
     };
   }
 
-  // 2. Récupérer les étudiants activés de l'amicale
-  const { data: studentsSnap } = await supabaseAdmin
-    .from("students")
-    .select("id, prenom, nom, email")
+  // 2. Synchroniser les délégués et représentants dans la table `students`
+  const { data: adminsSnap } = await supabaseAdmin
+    .from("admins")
+    .select("id, nom, prenom, email, role")
     .eq("amicale_id", amicaleId)
-    .eq("is_activated", true);
+    .in("role", ["delegue", "representant"])
+    .eq("is_revoked", false);
+
+  // Récupérer TOUS les étudiants de l'amicale (activés ou non)
+  const { data: initialStudentsSnap } = await supabaseAdmin
+    .from("students")
+    .select("id, prenom, nom, email, is_activated")
+    .eq("amicale_id", amicaleId);
+
+  const studentsList = [...(initialStudentsSnap || [])];
+  const existingEmails = new Set(studentsList.map((s: any) => s.email.toLowerCase().trim()));
+
+  for (const admin of adminsSnap || []) {
+    const adminEmail = admin.email.toLowerCase().trim();
+    if (!existingEmails.has(adminEmail)) {
+      const { data: newStudent, error: insertErr } = await supabaseAdmin
+        .from("students")
+        .insert({
+          nom: admin.nom || "Admin",
+          prenom: admin.prenom || "Amicale",
+          email: adminEmail,
+          numero_carte: `ADM-${admin.role.toUpperCase()}-${admin.id.substring(0, 8)}`,
+          matricule: `ADM-${admin.role.toUpperCase()}-${admin.id.substring(0, 8)}`,
+          is_activated: true,
+          amicale_id: amicaleId,
+          created_at: new Date().toISOString()
+        })
+        .select("id, prenom, nom, email")
+        .single();
+      
+      if (!insertErr && newStudent) {
+        studentsList.push(newStudent);
+      } else {
+        console.error(`[auto-schedule] Erreur lors de l'insertion de l'admin ${adminEmail} dans students:`, insertErr);
+      }
+    }
+  }
 
   const expiresAt = election.date_fermeture
     ? new Date(election.date_fermeture as string).getTime()
     : Date.now() + 24 * 60 * 60 * 1000;
 
-  // 3. Générer et stocker les OTP, puis envoyer les e-mails aux étudiants
+  // 3. Générer et stocker les OTP, puis envoyer les e-mails aux étudiants et admins synchronisés
   let studentEmails = 0;
-  for (const student of studentsSnap || []) {
+  for (const student of studentsList) {
     const otp = generateOtp();
 
     await supabaseAdmin
@@ -189,6 +225,29 @@ async function openElection(election: Record<string, unknown>): Promise<{ succes
   };
 }
 
+async function closeElection(election: Record<string, unknown>): Promise<{ success: boolean; message: string }> {
+  const electionId = election.id as string;
+
+  const { error: updateErr } = await supabaseAdmin
+    .from("elections")
+    .update({
+      statut: "fermee",
+    })
+    .eq("id", electionId);
+
+  if (updateErr) {
+    return {
+      success: false,
+      message: `Élection ${electionId}: erreur lors de la fermeture – ${updateErr.message}`,
+    };
+  }
+
+  return {
+    success: true,
+    message: `[Clôture] Élection "${election.titre}" automatiquement fermée car l'heure de fermeture est dépassée.`,
+  };
+}
+
 // ─── Handler principal ────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -260,9 +319,28 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // --- PHASE 3 : Clôture Automatique des Scrutins Expirés ---
+    const { data: dueForClosing, error: fetchCloseErr } = await supabaseAdmin
+      .from("elections")
+      .select("*")
+      .eq("statut", "ouverte")
+      .not("date_fermeture", "is", null)
+      .lte("date_fermeture", nowStr);
+
+    if (fetchCloseErr) throw fetchCloseErr;
+
+    if (dueForClosing && dueForClosing.length > 0) {
+      for (const election of dueForClosing) {
+        const result = await closeElection(election);
+        results.push(result.message);
+        if (result.success) processedCount++;
+        console.info(result.message);
+      }
+    }
+
     if (results.length === 0) {
       return new Response(
-        JSON.stringify({ message: "Aucune action requise (envoi d'e-mails ou ouverture)." }),
+        JSON.stringify({ message: "Aucune action requise (envoi d'e-mails, ouverture ou clôture)." }),
         { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
       );
     }
