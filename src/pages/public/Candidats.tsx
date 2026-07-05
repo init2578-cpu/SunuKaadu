@@ -49,7 +49,7 @@ export default function Candidats() {
       setLoading(true);
       setErrorMsg('');
 
-      // 1. Rechercher une élection ouverte ou publiée
+      // 1. Rechercher une élection ouverte, publiée ou planifiée
       const { data: electionsData, error: electionsErr } = await supabase
         .from('elections')
         .select('*')
@@ -58,10 +58,20 @@ export default function Candidats() {
 
       if (electionsErr) throw electionsErr;
 
-      const filteredElections = (electionsData || []).filter(e => e.statut === 'ouverte' || e.statut === 'publiee');
+      const now = new Date();
+      const filteredElections = (electionsData || []).filter(e => {
+        if (e.statut === 'ouverte' || e.statut === 'publiee') return true;
+        if (e.statut === 'brouillon' && e.date_ouverture) {
+          return new Date(e.date_ouverture) > now;
+        }
+        return false;
+      });
 
-      // Prendre l'élection ouverte prioritairement, sinon la dernière publiée
+      // Prendre l'élection ouverte ou planifiée prioritairement, sinon la dernière publiée
       let activeElection = filteredElections.find(e => e.statut === 'ouverte');
+      if (!activeElection) {
+        activeElection = filteredElections.find(e => e.statut === 'brouillon');
+      }
       if (!activeElection && filteredElections.length > 0) {
         activeElection = filteredElections[0];
       }
@@ -171,11 +181,15 @@ export default function Candidats() {
             <span className={`px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
               election.statut === 'ouverte'
                 ? (election.date_ouverture && new Date() < new Date(election.date_ouverture) ? 'text-neon-pink border border-neon-pink/30 bg-neon-pink/10' : 'text-neon-cyan border border-neon-cyan/30 bg-neon-cyan/10')
-                : 'text-gray-400 border border-gray-600 bg-gray-800/30'
+                : election.statut === 'brouillon'
+                  ? 'text-neon-pink border border-neon-pink/30 bg-neon-pink/10'
+                  : 'text-gray-400 border border-gray-600 bg-gray-800/30'
             }`}>
               {election.statut === 'ouverte' 
                 ? (election.date_ouverture && new Date() < new Date(election.date_ouverture) ? 'PLANIFIÉ' : 'EN COURS')
-                : 'ARCHIVE'}
+                : election.statut === 'brouillon'
+                  ? 'PLANIFIÉ'
+                  : 'ARCHIVE'}
             </span>
           </div>
 
