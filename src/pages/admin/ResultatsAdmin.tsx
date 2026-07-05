@@ -462,7 +462,7 @@ export default function ResultatsAdmin() {
 
           {/* Procès-Verbal / Préambule Officiel */}
           {selectedElection && stats && (
-            <div className="p-6 rounded-2xl border border-white/10 bg-white/2 space-y-3 text-sm text-gray-300 print:text-black print:bg-white print:border-black print:p-4 font-mono leading-relaxed">
+            <div className="p-6 rounded-2xl border border-white/10 bg-white/2 space-y-3 text-sm text-gray-300 print:text-black print:bg-white print:border-black print:p-4 font-mono leading-relaxed print:break-inside-avoid">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 print:text-black">
                 <FileText className="w-4 h-4 text-uni-gold print:text-black" />
                 <span>Procès-Verbal de Scrutin</span>
@@ -479,7 +479,7 @@ export default function ResultatsAdmin() {
 
           {/* Évolution globale de la participation */}
           {selectedElection && stats && emargementTimestamps.length > 0 && (
-            <div className="glassmorphism p-6 rounded-2xl border border-white/5 space-y-4">
+            <div className="glassmorphism p-6 rounded-2xl border border-white/5 space-y-4 print:break-inside-avoid">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 print:text-black font-display">
                 <span>📈 Évolution Temporelle Globale de la Participation (Turnout)</span>
               </h3>
@@ -619,7 +619,7 @@ export default function ResultatsAdmin() {
                   {/* --- VUE IMPRESSION PDF (Procès-verbal figé avec Tableau + Diagramme circulaire) --- */}
                   <div className="hidden print:block space-y-6">
                     {/* Tableau print */}
-                    <div className="border border-black rounded-none overflow-hidden">
+                    <div className="border border-black rounded-none overflow-hidden print:break-inside-avoid">
                       <table className="min-w-full divide-y divide-black text-black">
                         <thead className="bg-gray-100">
                           <tr>
@@ -647,7 +647,7 @@ export default function ResultatsAdmin() {
                     </div>
 
                     {/* Diagramme circulaire print */}
-                    <div className="flex justify-center items-center py-4 border border-black p-4 bg-white">
+                    <div className="flex justify-center items-center py-4 border border-black p-4 bg-white print:break-inside-avoid">
                       <div className="w-full max-w-lg text-black">
                         <ResultsChart
                           candidates={pos.candidates}
@@ -659,7 +659,7 @@ export default function ResultatsAdmin() {
                   </div>
 
                   {/* --- COURBE D'ÉVOLUTION TEMPORELLE (Affichée sur écran et à l'impression) --- */}
-                  <div className="mt-8 pt-6 border-t border-white/5 print:border-black/20">
+                  <div className="mt-8 pt-6 border-t border-white/5 print:border-black/20 print:break-inside-avoid">
                     <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4 print:text-black font-mono flex items-center gap-1.5">
                       <span>📈 Évolution temporelle des suffrages ({pos.nom.toUpperCase()})</span>
                     </h4>
@@ -678,7 +678,7 @@ export default function ResultatsAdmin() {
           </div>
 
           {/* Section signature officielle pour procès-verbal d'impression */}
-          <div className="hidden print:block mt-12 pt-8 border-t border-dashed border-gray-400">
+          <div className="hidden print:block mt-12 pt-8 border-t border-dashed border-gray-400 print:break-inside-avoid">
             <h4 className="text-xs font-bold uppercase tracking-wider text-black mb-6 text-center">Fait à Dakar, le {new Date().toLocaleDateString('fr-FR')}</h4>
             <div className="flex justify-between text-[10px] font-semibold text-black px-4">
               <div>
