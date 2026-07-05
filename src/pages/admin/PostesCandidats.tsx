@@ -740,32 +740,30 @@ export default function PostesCandidats() {
 
           if (updateErr) throw updateErr;
 
-          // Envoyer l'email de bienvenue si non activé
-          if (!existingAdmin.is_activated) {
-            const poste = postes.find(p => p.candidats?.some((c: any) => c.id === candidateId));
-            const posteNom = poste ? poste.nom : 'Non défini';
-            const electionTitre = currentElection ? currentElection.titre : 'Non définie';
+          // Envoyer l'email de bienvenue automatiquement
+          const poste = postes.find(p => p.candidats?.some((c: any) => c.id === candidateId));
+          const posteNom = poste ? poste.nom : 'Non défini';
+          const electionTitre = currentElection ? currentElection.titre : 'Non définie';
 
-            supabase.functions.invoke('send-rep-email', {
-              body: {
-                to: emailLower,
-                prenom,
-                nom,
-                candidat_prenom: targetCandidateForRep.prenom,
-                candidat_nom: targetCandidateForRep.nom,
-                poste_nom: posteNom,
-                election_titre: electionTitre,
-                mot_de_passe: passwordToUse,
-                role: 'representant'
-              }
-            }).then(({ data, error }) => {
-              if (error) {
-                console.warn("Erreur d'envoi d'email de bienvenue:", error);
-              } else if (data && data.sandbox_restriction) {
-                console.info("Info: Envoi d'email de bienvenue limité par Resend (mode Sandbox).");
-              }
-            }).catch(err => console.error("Erreur d'envoi d'email de bienvenue:", err));
-          }
+          supabase.functions.invoke('send-rep-email', {
+            body: {
+              to: emailLower,
+              prenom,
+              nom,
+              candidat_prenom: targetCandidateForRep.prenom,
+              candidat_nom: targetCandidateForRep.nom,
+              poste_nom: posteNom,
+              election_titre: electionTitre,
+              mot_de_passe: existingAdmin.is_activated ? "(Déjà configuré - Utilisez votre mot de passe habituel)" : passwordToUse,
+              role: 'representant'
+            }
+          }).then(({ data, error }) => {
+            if (error) {
+              console.warn("Erreur d'envoi d'email de bienvenue:", error);
+            } else if (data && data.sandbox_restriction) {
+              console.info("Info: Envoi d'email de bienvenue limité par Resend (mode Sandbox).");
+            }
+          }).catch(err => console.error("Erreur d'envoi d'email de bienvenue:", err));
 
           triggerNotification('success', "Le représentant a été mis à jour.");
           setIsRepModalOpen(false);
@@ -800,32 +798,30 @@ export default function PostesCandidats() {
 
       if (insertErr) throw insertErr;
 
-      // Envoyer l'email de bienvenue si non activé
-      if (!isActivated) {
-        const poste = postes.find(p => p.candidats?.some((c: any) => c.id === candidateId));
-        const posteNom = poste ? poste.nom : 'Non défini';
-        const electionTitre = currentElection ? currentElection.titre : 'Non définie';
+      // Envoyer l'email de bienvenue automatiquement
+      const poste = postes.find(p => p.candidats?.some((c: any) => c.id === candidateId));
+      const posteNom = poste ? poste.nom : 'Non défini';
+      const electionTitre = currentElection ? currentElection.titre : 'Non définie';
 
-        supabase.functions.invoke('send-rep-email', {
-          body: {
-            to: emailLower,
-            prenom,
-            nom,
-            candidat_prenom: targetCandidateForRep.prenom,
-            candidat_nom: targetCandidateForRep.nom,
-            poste_nom: posteNom,
-            election_titre: electionTitre,
-            mot_de_passe: passwordToUse,
-            role: 'representant'
-          }
-        }).then(({ data, error }) => {
-          if (error) {
-            console.warn("Erreur d'envoi d'email de bienvenue:", error);
-          } else if (data && data.sandbox_restriction) {
-            console.info("Info: Envoi d'email de bienvenue limité par Resend (mode Sandbox).");
-          }
-        }).catch(err => console.error("Erreur d'envoi d'email de bienvenue:", err));
-      }
+      supabase.functions.invoke('send-rep-email', {
+        body: {
+          to: emailLower,
+          prenom,
+          nom,
+          candidat_prenom: targetCandidateForRep.prenom,
+          candidat_nom: targetCandidateForRep.nom,
+          poste_nom: posteNom,
+          election_titre: electionTitre,
+          mot_de_passe: isActivated ? "(Déjà configuré - Utilisez votre mot de passe habituel)" : passwordToUse,
+          role: 'representant'
+        }
+      }).then(({ data, error }) => {
+        if (error) {
+          console.warn("Erreur d'envoi d'email de bienvenue:", error);
+        } else if (data && data.sandbox_restriction) {
+          console.info("Info: Envoi d'email de bienvenue limité par Resend (mode Sandbox).");
+        }
+      }).catch(err => console.error("Erreur d'envoi d'email de bienvenue:", err));
 
       if (isActivated) {
         triggerNotification('success', `✅ Représentant enregistré ! Il peut se connecter directement avec son email sur l'espace représentant.`);
