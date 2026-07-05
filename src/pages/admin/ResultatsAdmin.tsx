@@ -710,12 +710,12 @@ export default function ResultatsAdmin() {
 
           {/* Pied de page imprimé répété en bas de chaque page PDF */}
           <div className="hidden print:block fixed bottom-0 left-0 right-0 text-center text-[10px] text-black font-bold font-mono bg-white py-2 border-t border-black">
-            Copyright : CRE - Centre de Recherche et d'Essais de Kolda
+            Copyright : CRE - Centre de Recherche et d'Essais de Kolda | MESRI
           </div>
 
           {/* Pied de page écran (affiché en bas du contenu sur écran seulement) */}
           <div className="no-print mt-16 pt-6 border-t border-white/5 text-center text-xs text-gray-500 font-semibold font-mono">
-            Copyright : CRE - Centre de Recherche et d'Essais de Kolda
+            Copyright : CRE - Centre de Recherche et d'Essais de Kolda | MESRI
           </div>
         </>
       )}
