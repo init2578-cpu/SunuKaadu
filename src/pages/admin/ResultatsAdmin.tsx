@@ -18,6 +18,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import ResultsChart from '../../components/ResultsChart';
+import VoteEvolutionChart from '../../components/VoteEvolutionChart';
 
 interface Election {
   id: string;
@@ -66,6 +67,7 @@ export default function ResultatsAdmin() {
   const [resultsLoading, setResultsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [viewModes, setViewModes] = useState<Record<string, 'list' | 'bar' | 'doughnut'>>({});
+  const [votes, setVotes] = useState<any[]>([]);
 
   // Charger toutes les élections existantes pour l'admin
   const loadAllElections = async () => {
@@ -138,9 +140,11 @@ export default function ResultatsAdmin() {
       // 3. Charger tous les votes de cette élection
       const { data: votesDocs, error: votesErr } = await supabase
         .from('votes')
-        .select('candidat_id')
+        .select('candidat_id, created_at')
         .eq('election_id', electionId);
       if (votesErr) throw votesErr;
+
+      setVotes(votesDocs || []);
 
       // 4. Compter les votes par candidat
       const voteCounts: Record<string, number> = {};
@@ -622,6 +626,21 @@ export default function ResultatsAdmin() {
                           type="doughnut"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* --- COURBE D'ÉVOLUTION TEMPORELLE (Affichée sur écran et à l'impression) --- */}
+                  <div className="mt-8 pt-6 border-t border-white/5 print:border-black/20">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4 print:text-black font-mono flex items-center gap-1.5">
+                      <span>📈 Évolution temporelle des suffrages ({pos.nom.toUpperCase()})</span>
+                    </h4>
+                    <div className="p-4 bg-white/2 rounded-xl border border-white/10 print:bg-white print:border-black print:p-2">
+                      <VoteEvolutionChart
+                        candidates={pos.candidates}
+                        votes={votes.filter(v => pos.candidates.some(c => c.id === v.candidat_id))}
+                        dateOuverture={selectedElection?.date_ouverture || null}
+                        dateFermeture={selectedElection?.date_fermeture || null}
+                      />
                     </div>
                   </div>
                 </div>
