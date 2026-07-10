@@ -340,10 +340,10 @@ Deno.serve(async (req: Request) => {
     const isAdminOrDelegue = payload.role === 'super_admin' || payload.role === 'delegue';
     const loginUrl = payload.login_url || (isAdminOrDelegue ? `${APP_URL}/admin/login` : `${APP_URL}/representant/login`);
     const emailSubject = payload.role === 'super_admin'
-      ? `🗳️ Votre accès Super Administrateur - SunuKaadu`
+      ? `[SunuKaadu] Votre acces Super Administrateur`
       : payload.role === 'delegue'
-        ? `🗳️ Votre espace délégué - SunuKaadu`
-        : `🗳️ Votre espace représentant - ${payload.candidat_prenom || ''} ${payload.candidat_nom || ''}`;
+        ? `[SunuKaadu] Votre espace delegue`
+        : `[SunuKaadu] Votre espace representant - ${payload.candidat_prenom || ''} ${payload.candidat_nom || ''}`;
 
     const result = await sendEmail(payload.to, emailSubject, emailTemplate({ ...payload, login_url: loginUrl }));
 

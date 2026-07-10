@@ -410,7 +410,7 @@ Deno.serve(async (req: Request) => {
           { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
         );
       }
-      subject = `🗳️ Votre code de vote — ${payload.election_titre}`;
+      subject = `[SunuKaadu] Votre code de vote - ${payload.election_titre}`;
       html = studentEmailTemplate({
         prenom: payload.prenom,
         nom: payload.nom,
@@ -420,7 +420,7 @@ Deno.serve(async (req: Request) => {
         date_fermeture: dateFr,
       });
     } else {
-      subject = `🏆 Scrutin ouvert — ${payload.election_titre}`;
+      subject = `[SunuKaadu] Scrutin ouvert - ${payload.election_titre}`;
       html = candidatEmailTemplate({
         prenom: payload.prenom,
         nom: payload.nom,
